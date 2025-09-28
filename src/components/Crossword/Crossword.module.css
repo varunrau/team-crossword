@@ -1,0 +1,258 @@
+.container {
+  display: grid;
+  grid-template-columns: auto 360px;
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+  max-width: 100%;
+}
+
+.uploader {
+  margin-bottom: 16px;
+}
+
+.dropZone {
+  border: 2px dashed var(--gray-alpha-200);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dropActive {
+  background: #eefcf0; /* subtle green tint while dragging */
+  border-color: #86e19a;
+}
+
+.gridWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meta {
+  font-size: 14px;
+  color: var(--foreground);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 4px 0;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--gray-alpha-200);
+  background: var(--background);
+  color: var(--foreground);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn:hover {
+  background: var(--gray-alpha-100);
+}
+
+
+
+.grid {
+  --cell-size: 40px;
+  display: inline-grid;
+  background: transparent; /* no backdrop behind cells */
+  margin: 0 auto; /* center within wrapper */
+  border: 2px solid #000; /* NYT-style outer border */
+  /* columns will be set inline via style gridTemplateColumns */
+}
+
+.cell {
+  position: relative;
+  width: var(--cell-size);
+  height: var(--cell-size);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #000;
+}
+
+.block {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  background: #000;
+  border: 1px solid #000;
+}
+
+.cellInput {
+  width: 100%;
+  height: 100%;
+  border: none;
+  text-align: center;
+  font-weight: 700;
+  font-size: 22px;
+  text-transform: uppercase;
+  outline: none;
+  background: transparent; /* allow parent highlight to show */
+  z-index: 2;
+}
+
+.correct {
+  color: #777;
+}
+
+.incorrect {
+  color: #d22;
+}
+
+.rowHighlight {
+  background: var(--gray-alpha-100); /* light gray */
+}
+
+.colHighlight {
+  background: var(--gray-alpha-100); /* light gray */
+}
+
+.cellNum {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 11px;
+  line-height: 1;
+  color: #666;
+  font-weight: 600;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.clues {
+  max-height: 70vh;
+  overflow: auto;
+  padding: 8px 12px;
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 6px;
+  background: var(--background);
+}
+
+.cluesColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.clueColumn {
+}
+
+.clueSectionTitle {
+  margin: 8px 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #666;
+  border-bottom: 1px solid var(--gray-alpha-200);
+  padding-bottom: 6px;
+}
+
+.clueList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.clueItem {
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Teams bar */
+.teamBar {
+  position: sticky;
+  bottom: 0;
+  background: var(--background);
+  border-top: 1px solid var(--gray-alpha-200);
+  padding: 10px 12px;
+  margin-top: 16px;
+}
+
+.teamsRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.teamItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.teamSelected {
+  border-color: var(--foreground);
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #00000030;
+}
+
+.teamName {
+  font-size: 13px;
+}
+
+.teamNameSelected {
+  font-weight: 700;
+}
+
+.teamScore {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.addTeamForm {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.addTeamInput {
+  height: 30px;
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 6px;
+  padding: 0 8px;
+}
+
+.addTeamBtn {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 6px;
+  background: var(--background);
+  cursor: pointer;
+}
+
+.addTeamBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

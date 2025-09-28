@@ -7,13 +7,13 @@
   --button-secondary-hover: #f2f2f2;
 
   display: grid;
-  grid-template-rows: 20px 1fr 20px;
-  align-items: center;
-  justify-items: center;
+  grid-template-rows: auto 1fr auto;
+  align-items: start;
+  justify-items: stretch;
   min-height: 100svh;
-  padding: 80px;
-  gap: 64px;
-  font-family: var(--font-geist-sans);
+  padding: 32px;
+  gap: 12px;
+  font-family: var(--font-source-sans);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,7 +30,7 @@
 .main {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 12px;
   grid-row-start: 2;
 }
 
@@ -128,15 +128,14 @@ a.secondary {
 @media (max-width: 600px) {
   .page {
     padding: 32px;
-    padding-bottom: 80px;
   }
 
   .main {
-    align-items: center;
+    align-items: stretch;
   }
 
   .main ol {
-    text-align: center;
+    text-align: left;
   }
 
   .ctas {
