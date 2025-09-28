@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import styles from "./Crossword.module.css";
 import type { ParsedPuz } from "@/lib/puz";
 import { parsePuz } from "@/lib/puz";
@@ -15,7 +15,12 @@ type Team = {
   color: string; // hex
 };
 
-export default function Crossword(props: Props) {
+export type CrosswordHandle = {
+  checkPuzzle: () => void;
+};
+
+const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: Props, ref) {
+  const debug = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug");
   const [puz, setPuz] = useState<ParsedPuz | null>(null);
   const [cells, setCells] = useState<string[]>([]); // user-entered letters per cell, length width*height
   const inputRefs = useRef<HTMLInputElement[]>([]);
@@ -35,7 +40,8 @@ export default function Crossword(props: Props) {
   const [editingTeamId, setEditingTeamId] = useState<number | null>(null);
   const [cellSize, setCellSize] = useState<number>(40);
   const gridAreaRef = useRef<HTMLDivElement | null>(null);
-  const teamBarRef = useRef<HTMLDivElement | null>(null);
+  const [revealedAcross, setRevealedAcross] = useState<boolean[]>([]);
+  const [revealedDown, setRevealedDown] = useState<boolean[]>([]);
 
   const setCaretToEnd = (el: HTMLInputElement | null) => {
     if (!el) return;
@@ -101,13 +107,77 @@ export default function Crossword(props: Props) {
 
   const onFile = useCallback(async (f: File) => {
     const buf = await f.arrayBuffer();
-    const parsed = parsePuz(buf);
+    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const orderParam = params?.get("clueOrder") as any;
+    const parsed = parsePuz(buf, { clueOrder: orderParam });
+    if (debug) {
+      try {
+        // eslint-disable-next-line no-console
+        const sha = await (async () => {
+          try {
+            const d = await crypto.subtle.digest("SHA-256", buf);
+            const arr = Array.from(new Uint8Array(d));
+            return arr.map((b) => b.toString(16).padStart(2, "0")).join("");
+          } catch {
+            return "(hash unavailable)";
+          }
+        })();
+        // Basic meta
+        // eslint-disable-next-line no-console
+        console.debug("[PUZ] meta", {
+          width: parsed.width,
+          height: parsed.height,
+          clues: parsed.cluesRaw.length,
+          acrossCount: parsed.across.length,
+          downCount: parsed.down.length,
+          sha256: sha,
+        });
+        // Across/Down numbering and first few clues
+        // eslint-disable-next-line no-console
+        console.debug(
+          "[PUZ] across numbers",
+          parsed.across.slice(0, 20).map((e) => e.number),
+        );
+        // eslint-disable-next-line no-console
+        console.debug(
+          "[PUZ] down numbers",
+          parsed.down.slice(0, 20).map((e) => e.number),
+        );
+        // eslint-disable-next-line no-console
+        console.debug(
+          "[PUZ] first across clues",
+          parsed.across.slice(0, 10).map((e) => `${e.number}: ${e.clue}`),
+        );
+        // eslint-disable-next-line no-console
+        console.debug(
+          "[PUZ] first down clues",
+          parsed.down.slice(0, 10).map((e) => `${e.number}: ${e.clue}`),
+        );
+        const a6 = parsed.across.find((e) => e.number === 6);
+        const d1 = parsed.down.find((e) => e.number === 1);
+        // eslint-disable-next-line no-console
+        console.debug("[PUZ] A6:", a6?.clue, " D1:", d1?.clue);
+        // Raw chunks for comparison
+        const rawAcross = parsed.cluesRaw.slice(0, parsed.across.length).slice(0, 10);
+        const rawDown = parsed.cluesRaw
+          .slice(parsed.across.length, parsed.across.length + parsed.down.length)
+          .slice(0, 10);
+        // eslint-disable-next-line no-console
+        console.debug("[PUZ] raw across first 10:", rawAcross);
+        // eslint-disable-next-line no-console
+        console.debug("[PUZ] raw down first 10:", rawDown);
+      } catch (err) {
+        console.error("[PUZ] debug error:", err);
+      }
+    }
     setPuz(parsed);
     // Initialize user cells: empty for non-blocks, '' for block (kept unused)
     const initial = parsed.grid.map((cell) => (cell.isBlock ? "" : ""));
     setCells(initial);
     setStatus(parsed.grid.map((cell) => (cell.isBlock ? "unchecked" : "unchecked")));
     setOwners(parsed.grid.map(() => null));
+    setRevealedAcross(new Array(parsed.across.length).fill(false));
+    setRevealedDown(new Array(parsed.down.length).fill(false));
     inputRefs.current = [];
   }, []);
 
@@ -116,9 +186,8 @@ export default function Crossword(props: Props) {
     if (!puz) return;
     const vh = typeof window !== "undefined" ? window.innerHeight : 900;
     const rectTop = gridAreaRef.current?.getBoundingClientRect().top ?? 0;
-    const teamH = teamBarRef.current?.getBoundingClientRect().height ?? 0;
     const verticalPadding = 8; // small breathing room
-    const availableH = Math.max(120, Math.floor(vh - rectTop - teamH - verticalPadding));
+    const availableH = Math.max(120, Math.floor(vh - rectTop - verticalPadding));
     const sizeByH = Math.floor(availableH / puz.height);
 
     // Available width equals the left column width
@@ -146,6 +215,35 @@ export default function Crossword(props: Props) {
     const t = setTimeout(() => computeCellSize(), 0);
     return () => clearTimeout(t);
   }, [teams.length, showTeamInputs, computeCellSize]);
+
+  const checkPuzzle = useCallback(() => {
+    if (!puz) return;
+    const w = puz.width;
+    const size = w * puz.height;
+    setStatus((prev) => {
+      const next: Array<"unchecked" | "correct" | "incorrect"> = new Array(size);
+      for (let i = 0; i < size; i++) {
+        const cell = puz.grid[i];
+        if (cell.isBlock) {
+          next[i] = "unchecked";
+          continue;
+        }
+        const val = (cells[i] || "").toUpperCase();
+        if (!val) {
+          next[i] = "unchecked";
+        } else if (val === cell.solution) {
+          next[i] = "correct";
+        } else {
+          next[i] = "incorrect";
+        }
+      }
+      return next;
+    });
+  }, [puz, cells]);
+
+  useImperativeHandle(ref, () => ({
+    checkPuzzle,
+  }), [checkPuzzle]);
 
   const handleFileChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>(
     (e) => {
@@ -380,32 +478,6 @@ export default function Crossword(props: Props) {
         break;
     }
   };
-
-  const checkPuzzle = useCallback(() => {
-    if (!puz) return;
-    const w = puz.width;
-    const size = w * puz.height;
-    setStatus((prev) => {
-      const next: Array<"unchecked" | "correct" | "incorrect"> = new Array(size);
-      for (let i = 0; i < size; i++) {
-        const cell = puz.grid[i];
-        if (cell.isBlock) {
-          next[i] = "unchecked";
-          continue;
-        }
-        const val = (cells[i] || "").toUpperCase();
-        if (!val) {
-          next[i] = "unchecked";
-        } else if (val === cell.solution) {
-          next[i] = "correct";
-        } else {
-          next[i] = "incorrect";
-        }
-      }
-      return next;
-    });
-  }, [puz, cells]);
-
   const scores = useMemo(() => {
     const map = new Map<number, number>();
     teams.forEach((t) => map.set(t.id, 0));
@@ -425,9 +497,7 @@ export default function Crossword(props: Props) {
 
   const getCellTextStyle = (i: number): React.CSSProperties => {
     const st = status[i];
-    if (st === "incorrect") return { color: "#d22" };
     const color = getTeamColor(owners[i] ?? null);
-    if (st === "correct") return { color, opacity: 0.6 };
     return { color };
   };
 
@@ -461,59 +531,52 @@ export default function Crossword(props: Props) {
 
   return (
     <div className={props.className}>
-      <div className={styles.uploader}>
-        <div
-          className={`${styles.dropZone} ${dragActive ? styles.dropActive : ""}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={(e) => {
-            e.preventDefault();
-            setDragActive(false);
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragActive(false);
-            const files = Array.from(e.dataTransfer?.files || []);
-            const file = files.find((f) => f.name.toLowerCase().endsWith(".puz")) || files[0];
-            if (file) onFile(file);
-          }}
-          onClick={() => fileInputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
+      {!puz ? (
+        <div className={styles.uploader}>
+          <div
+            className={`${styles.dropZone} ${dragActive ? styles.dropActive : ""}`}
+            onDragOver={(e) => {
               e.preventDefault();
-              fileInputRef.current?.click();
-            }
-          }}
-          aria-label="Click or drag a .puz file to upload"
-        >
-          Click or drag a .puz file here
+              setDragActive(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setDragActive(false);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragActive(false);
+              const files = Array.from(e.dataTransfer?.files || []);
+              const file = files.find((f) => f.name.toLowerCase().endsWith(".puz")) || files[0];
+              if (file) onFile(file);
+            }}
+            onClick={() => fileInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
+            aria-label="Click or drag a .puz file to upload"
+          >
+            Click or drag a .puz file here
+          </div>
+          <input
+            ref={fileInputRef}
+            className={styles.hidden}
+            type="file"
+            accept=".puz,application/octet-stream"
+            suppressHydrationWarning
+            onChange={handleFileChange}
+          />
         </div>
-        <input
-          ref={fileInputRef}
-          className={styles.hidden}
-          type="file"
-          accept=".puz,application/octet-stream"
-          suppressHydrationWarning
-          onChange={handleFileChange}
-        />
-      </div>
+      ) : null}
 
       {!puz ? null : (
         <div className={styles.container}>
           <div className={styles.gridWrapper} ref={gridAreaRef}>
-            <div className={styles.meta}>
-              <div><strong>{puz.title || "Untitled"}</strong></div>
-              <div>{puz.author}</div>
-            </div>
-            <div className={styles.actions}>
-              <button type="button" className={styles.btn} onClick={checkPuzzle}>
-                Check Puzzle
-              </button>
-            </div>
             <div className={styles.grid} style={gridStyle}>
               {puz.grid.map((cell, i) =>
                 cell.isBlock ? (
@@ -521,14 +584,14 @@ export default function Crossword(props: Props) {
                 ) : (
                   <div
                     key={i}
-                    className={`${styles.cell} ${isRowHighlighted(i) ? styles.rowHighlight : ""} ${isColHighlighted(i) ? styles.colHighlight : ""}`}
+                    className={`${styles.cell} ${status[i] === "incorrect" ? styles.incorrectCell : ""} ${status[i] === "correct" ? styles.correctCell : ""}`}
                   >
                     {numberMap.has(i) ? (
                       <span className={styles.cellNum}>{numberMap.get(i)}</span>
                     ) : null}
                     <input
                       ref={setRef(i)}
-                      className={`${styles.cellInput} ${status[i] === "incorrect" ? styles.incorrect : ""}`}
+                      className={`${styles.cellInput} ${isRowHighlighted(i) ? styles.inputRowHighlight : ""} ${isColHighlighted(i) ? styles.inputColHighlight : ""}`}
                       style={getCellTextStyle(i)}
                       inputMode="text"
                       pattern="[A-Za-z]"
@@ -561,144 +624,224 @@ export default function Crossword(props: Props) {
               <div className={styles.clueColumn}>
                 <div className={styles.clueSectionTitle}>Across</div>
                 <ul className={styles.clueList}>
-                  {puz.across.map((a) => (
-                    <li key={`A${a.number}`} className={styles.clueItem}>
-                      <strong>{a.number}.</strong> {a.clue}
-                    </li>
-                  ))}
+                  {puz.across.map((a, i) => {
+                    const shown = revealedAcross[i];
+                    const length = a.cells.length;
+                    return (
+                      <li
+                        key={`A${a.number}`}
+                        className={`${styles.clueItem} ${styles.clueItemButton}`}
+                        onClick={() => {
+                          if (!shown) setRevealedAcross((prev) => prev.map((v, idx) => (idx === i ? true : v)));
+                          setMode("across");
+                          goToClue("across", i);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            if (!shown) setRevealedAcross((prev) => prev.map((v, idx) => (idx === i ? true : v)));
+                            setMode("across");
+                            goToClue("across", i);
+                          }
+                        }}
+                      >
+                        <strong>{a.number}.</strong> {shown ? (
+                          <>{" "}{a.clue}</>
+                        ) : (
+                          <span className={styles.clueHidden}>{length} {length === 1 ? "letter" : "letters"}</span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
               <div className={styles.clueColumn}>
                 <div className={styles.clueSectionTitle}>Down</div>
                 <ul className={styles.clueList}>
-                  {puz.down.map((d) => (
-                    <li key={`D${d.number}`} className={styles.clueItem}>
-                      <strong>{d.number}.</strong> {d.clue}
-                    </li>
-                  ))}
+                  {puz.down.map((d, i) => {
+                    const shown = revealedDown[i];
+                    const length = d.cells.length;
+                    return (
+                      <li
+                        key={`D${d.number}`}
+                        className={`${styles.clueItem} ${styles.clueItemButton}`}
+                        onClick={() => {
+                          if (!shown) setRevealedDown((prev) => prev.map((v, idx) => (idx === i ? true : v)));
+                          setMode("down");
+                          goToClue("down", i);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            if (!shown) setRevealedDown((prev) => prev.map((v, idx) => (idx === i ? true : v)));
+                            setMode("down");
+                            goToClue("down", i);
+                          }
+                        }}
+                      >
+                        <strong>{d.number}.</strong> {shown ? (
+                          <>{" "}{d.clue}</>
+                        ) : (
+                          <span className={styles.clueHidden}>{length} {length === 1 ? "letter" : "letters"}</span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </div>
           </div>
+          <div className={styles.teamsPanel}>
+              <div className={styles.clueSectionTitle}>Teams</div>
+              <div className={styles.teamsRow}>
+                {teams.map((t) => {
+                  const selected = t.id === selectedTeamId;
+                  const score = scores.get(t.id) || 0;
+                  return (
+                    <div
+                      key={t.id}
+                      className={`${styles.teamItem} ${selected ? styles.teamSelected : ""}`}
+                      onClick={() => {
+                        if (selected) {
+                          setEditingTeamId(t.id);
+                        } else {
+                          setSelectedTeamId(t.id);
+                          setEditingTeamId(null);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (editingTeamId === t.id) return;
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          if (selected) {
+                            setEditingTeamId(t.id);
+                          } else {
+                            setSelectedTeamId(t.id);
+                            setEditingTeamId(null);
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const next = e.relatedTarget as Node | null;
+                        if (!next || !e.currentTarget.contains(next)) {
+                          setEditingTeamId(null);
+                        }
+                      }}
+                    >
+                      {editingTeamId === t.id ? (
+                        <>
+                          <input
+                            type="color"
+                            value={t.color}
+                            onChange={(e) =>
+                              setTeams((prev) => prev.map((tm) => (tm.id === t.id ? { ...tm, color: e.target.value } : tm)))
+                            }
+                            aria-label={`Color for ${t.name}`}
+                          />
+                          <input
+                            type="text"
+                            className={styles.addTeamInput}
+                            value={t.name}
+                            onChange={(e) =>
+                              setTeams((prev) => prev.map((tm) => (tm.id === t.id ? { ...tm, name: e.target.value } : tm)))
+                            }
+                            aria-label={`Name for ${t.name}`}
+                          />
+                          <button
+                            type="button"
+                            className={styles.addTeamBtn}
+                            onClick={() => setEditingTeamId(null)}
+                          >
+                            Save
+                          </button>
+                          <span className={styles.teamScore}>{score}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className={styles.dot} style={{ background: t.color }} />
+                          <span className={`${styles.teamName} ${selected ? styles.teamNameSelected : ""}`}>{t.name}</span>
+                          <span className={styles.teamScore}>{score}</span>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+                {showTeamInputs ? (
+                  <form
+                    className={styles.addTeamForm}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const name = newTeamName.trim() || `Team ${nextTeamId}`;
+                      const team: Team = { id: nextTeamId, name, color: newTeamColor };
+                      setTeams((prev) => [...prev, team]);
+                      setSelectedTeamId(team.id);
+                      setNextTeamId((n) => n + 1);
+                      setNewTeamName("");
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={newTeamColor}
+                      onChange={(e) => setNewTeamColor(e.target.value)}
+                      aria-label="Team color"
+                    />
+                    <input
+                      type="text"
+                      className={styles.addTeamInput}
+                      placeholder="Team name"
+                      value={newTeamName}
+                      onChange={(e) => setNewTeamName(e.target.value)}
+                    />
+                    <button type="submit" className={styles.addTeamBtn}>Add Team</button>
+                    <button
+                      type="button"
+                      className={styles.addTeamBtn}
+                      disabled={teams.length < 2}
+                      onClick={() => setShowTeamInputs(false)}
+                    >
+                      Start
+                    </button>
+                  </form>
+                ) : null}
+              </div>
+              {debug && (
+                <div className={styles.debugPanel}>
+                  <div><strong>Debug</strong></div>
+                  <div>Grid: {puz.width}x{puz.height}</div>
+                  <div>Across count: {puz.across.length} | Down count: {puz.down.length}</div>
+                  <div>Order: {puz.clueOrder}</div>
+                  <div>A6: {puz.across.find((e) => e.number === 6)?.clue || "(none)"}</div>
+                  <div>D1: {puz.down.find((e) => e.number === 1)?.clue || "(none)"}</div>
+                  <div style={{ marginTop: 6 }}>
+                    First across: {puz.across.slice(0, 5).map((e) => `${e.number}`).join(", ")}
+                  </div>
+                  <div>First down: {puz.down.slice(0, 5).map((e) => `${e.number}`).join(", ")}</div>
+                  <div style={{ marginTop: 6 }}>
+                    <div><strong>Across (first 10)</strong></div>
+                    {puz.across.slice(0, 10).map((e) => (
+                      <div key={`A${e.number}`}>A{e.number}: {e.clue}</div>
+                    ))}
+                    <div style={{ marginTop: 6 }}><strong>Down (first 10)</strong></div>
+                    {puz.down.slice(0, 10).map((e) => (
+                      <div key={`D${e.number}`}>D{e.number}: {e.clue}</div>
+                    ))}
+                    <div style={{ marginTop: 6 }}><strong>Raw slices</strong></div>
+                    <div>Raw Across[0..9]: {puz.cluesRaw.slice(0, puz.across.length).slice(0, 10).join(" | ")}</div>
+                    <div>Raw Down[0..9]: {puz.cluesRaw.slice(puz.across.length, puz.across.length + puz.down.length).slice(0, 10).join(" | ")}</div>
+                  </div>
+                </div>
+              )}
+            </div>
         </div>
       )}
-      {puz ? (
-        <div className={styles.teamBar} ref={teamBarRef}>
-          <div className={styles.teamsRow}>
-            {teams.map((t) => {
-              const selected = t.id === selectedTeamId;
-              const score = scores.get(t.id) || 0;
-              return (
-                <div
-                  key={t.id}
-                  className={`${styles.teamItem} ${selected ? styles.teamSelected : ""}`}
-                  onClick={() => {
-                    if (selected) {
-                      setEditingTeamId(t.id);
-                    } else {
-                      setSelectedTeamId(t.id);
-                      setEditingTeamId(null);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (editingTeamId === t.id) return; // don't hijack keys while editing
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      if (selected) {
-                        setEditingTeamId(t.id);
-                      } else {
-                        setSelectedTeamId(t.id);
-                        setEditingTeamId(null);
-                      }
-                    }
-                  }}
-                  onBlur={(e) => {
-                    const next = e.relatedTarget as Node | null;
-                    if (!next || !e.currentTarget.contains(next)) {
-                      setEditingTeamId(null);
-                    }
-                  }}
-                >
-                  {editingTeamId === t.id ? (
-                    <>
-                      <input
-                        type="color"
-                        value={t.color}
-                        onChange={(e) =>
-                          setTeams((prev) => prev.map((tm) => (tm.id === t.id ? { ...tm, color: e.target.value } : tm)))
-                        }
-                        aria-label={`Color for ${t.name}`}
-                      />
-                      <input
-                        type="text"
-                        className={styles.addTeamInput}
-                        value={t.name}
-                        onChange={(e) =>
-                          setTeams((prev) => prev.map((tm) => (tm.id === t.id ? { ...tm, name: e.target.value } : tm)))
-                        }
-                        aria-label={`Name for ${t.name}`}
-                      />
-                      <button
-                        type="button"
-                        className={styles.addTeamBtn}
-                        onClick={() => setEditingTeamId(null)}
-                      >
-                        Save
-                      </button>
-                      <span className={styles.teamScore}>{score}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className={styles.dot} style={{ background: t.color }} />
-                      <span className={`${styles.teamName} ${selected ? styles.teamNameSelected : ""}`}>{t.name}</span>
-                      <span className={styles.teamScore}>{score}</span>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-            {showTeamInputs ? (
-              <form
-                className={styles.addTeamForm}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const name = newTeamName.trim() || `Team ${nextTeamId}`;
-                  const team: Team = { id: nextTeamId, name, color: newTeamColor };
-                  setTeams((prev) => [...prev, team]);
-                  setSelectedTeamId(team.id);
-                  setNextTeamId((n) => n + 1);
-                  setNewTeamName("");
-                }}
-              >
-                <input
-                  type="color"
-                  value={newTeamColor}
-                  onChange={(e) => setNewTeamColor(e.target.value)}
-                  aria-label="Team color"
-                />
-                <input
-                  type="text"
-                  className={styles.addTeamInput}
-                  placeholder="Team name"
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                />
-                <button type="submit" className={styles.addTeamBtn}>Add Team</button>
-                <button
-                  type="button"
-                  className={styles.addTeamBtn}
-                  disabled={teams.length < 2}
-                  onClick={() => setShowTeamInputs(false)}
-                >
-                  Start
-                </button>
-              </form>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
     </div>
   );
-}
+});
+
+export default Crossword;

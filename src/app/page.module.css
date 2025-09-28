@@ -34,6 +34,25 @@
   grid-row-start: 2;
 }
 
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.headerBtn {
+  appearance: none;
+  border: 1px solid var(--gray-alpha-200);
+  background: var(--background);
+  color: var(--foreground);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.headerBtn:hover { background: var(--gray-alpha-100); }
+
 .main ol {
   font-family: var(--font-geist-mono);
   padding-left: 0;

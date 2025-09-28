@@ -1,6 +1,6 @@
 .container {
   display: grid;
-  grid-template-columns: auto 360px;
+  grid-template-columns: auto 360px 300px;
   gap: 24px;
   align-items: start;
   width: 100%;
@@ -99,12 +99,23 @@
   z-index: 2;
 }
 
-.correct {
-  color: #777;
+/* Input-level highlights to sit above cell background (e.g., incorrect state) */
+.inputRowHighlight {
+  background: var(--gray-alpha-200);
 }
 
-.incorrect {
-  color: #d22;
+.inputColHighlight {
+  background: var(--gray-alpha-200);
+}
+
+/* Light green background for correct cells */
+.correctCell {
+  background: rgba(34, 197, 94, 0.16);
+}
+
+/* Slight red background for incorrect cells at the cell level */
+.incorrectCell {
+  background: rgba(220, 38, 38, 0.12); /* red tint */
 }
 
 .rowHighlight {
@@ -136,6 +147,30 @@
   background: var(--background);
 }
 
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.teamsPanel {
+  padding: 8px 12px;
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 6px;
+  background: var(--background);
+}
+
+.debugPanel {
+  padding: 8px 12px;
+  border: 1px dashed var(--gray-alpha-200);
+  border-radius: 6px;
+  background: var(--background);
+  font-size: 12px;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
 .cluesColumns {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -165,6 +200,15 @@
 .clueItem {
   padding: 4px 0;
   font-size: 14px;
+}
+
+.clueItemButton {
+  cursor: pointer;
+}
+
+.clueHidden {
+  color: #666;
+  font-style: italic;
 }
 
 .hidden {
