@@ -258,21 +258,22 @@
 
 .teamsRow {
   display: flex;
+  flex-direction: column; /* stack teams vertically */
   gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: stretch; /* let children take full width */
 }
 
 .teamItem {
-  display: inline-flex;
+  display: flex; /* full-width row item */
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
   border: 1px solid var(--gray-alpha-200);
-  border-radius: 999px;
+  border-radius: 6px; /* match other containers */
   cursor: pointer;
   user-select: none;
-  max-width: 100%;
+  width: 100%; /* take full container width */
+  box-sizing: border-box; /* include padding in width */
 }
 
 .teamSelected {
