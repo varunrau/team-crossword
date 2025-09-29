@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+### Team Crossword
 
-## Getting Started
+---
 
-First, run the development server:
+Team crossword is a spin on the classic fill-in crossword that is meant to be played with teams.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+![image.png](attachment:fc45072a-3702-4d63-b66c-fe0d55b60711:image.png)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### How it works
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The goal of the game — like standard crosswords — is to guess words based on crossword clues. However, in this game, you’re competing against other players for control over the same board!
 
-## Learn More
+**Set up**
 
-To learn more about Next.js, take a look at the following resources:
+1. Upload a `.puz` file. You can find them on sites like https://crosswordfiend.com/download/ or you can make your own on sites like [https://exet.app](https://exet.app/).
+2. Create two or more teams. A team consists of a name and a color.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Gameplay**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Click on a clue to reveal the clue.
+2. Type in an answer and click check puzzle. All correct characters will be highlighted in green and all incorrect characters will be highlighted in red.
+3. If the guess was correct, then that team may choose another clue and go back to step 1.
+4. If the guess was incorrect, then it is the next team’s turn.
 
-## Deploy on Vercel
+**Scoring and endgame**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Teams score points based on the number of letters they correctly guess (not the number of words). The game is complete once all clues have been correctly guessed.
