@@ -19,6 +19,7 @@ type Team = {
 
 export type CrosswordHandle = {
   checkPuzzle: () => void;
+  start: () => void;
 };
 
 const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: Props, ref) {
