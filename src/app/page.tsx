@@ -23,7 +23,7 @@ export default function Home() {
                 Check Puzzle
               </button>
               <button
-                className={styles.headerBtn}
+                className={styles.startBtn}
                 type="button"
                 disabled={!canStart}
                 onClick={() => crosswordRef.current?.start()}

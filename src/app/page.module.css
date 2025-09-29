@@ -74,6 +74,30 @@
   background: var(--gray-alpha-100);
 }
 
+.startBtn {
+  appearance: none;
+  border: 1px solid #000;
+  background: #000;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.startBtn:hover {
+  background: #fff;
+  color: #000;
+  border: 1px solid #000;
+}
+
+.startBtn:disabled {
+  background: var(--gray-alpha-100);
+  color: var(--foreground);
+  border: 1px solid var(--gray-alpha-200);
+  cursor: not-allowed;
+}
+
 .main ol {
   font-family: var(--font-geist-mono);
   padding-left: 0;

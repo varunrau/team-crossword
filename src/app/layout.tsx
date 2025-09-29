@@ -31,12 +31,6 @@ export const metadata: Metadata = {
         height: 630,
         alt: "Team Crossword - Collaborative puzzle game",
       },
-      {
-        url: "/og-image@2x.png",
-        width: 2400,
-        height: 1260,
-        alt: "Team Crossword - Collaborative puzzle game",
-      },
     ],
     locale: "en_US",
     type: "website",

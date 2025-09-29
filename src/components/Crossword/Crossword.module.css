@@ -2,12 +2,15 @@
   display: grid;
   grid-template-columns: auto 360px 300px;
   gap: 24px;
-  align-items: start; /* align items to start */
+  align-items: start;
+  /* align items to start */
   width: 100%;
   max-width: 100%;
   flex: 1;
-  min-height: 0; /* enable child overflow scrolling */
-  overflow: hidden; /* contain overflow to grid items */
+  min-height: 0;
+  /* enable child overflow scrolling */
+  overflow: hidden;
+  /* contain overflow to grid items */
 }
 
 .uploader {
@@ -24,7 +27,8 @@
 }
 
 .dropActive {
-  background: #eefcf0; /* subtle green tint while dragging */
+  background: #eefcf0;
+  /* subtle green tint while dragging */
   border-color: #86e19a;
 }
 
@@ -32,14 +36,16 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: flex-start; /* prevent child stretch so grid border fits board */
+  align-items: flex-start;
+  /* prevent child stretch so grid border fits board */
 }
 
 .root {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 0; /* allow inner grid to define scrollable areas */
+  min-height: 0;
+  /* allow inner grid to define scrollable areas */
 }
 
 .meta {
@@ -73,9 +79,12 @@
 .grid {
   --cell-size: 40px;
   display: inline-grid;
-  background: transparent; /* no backdrop behind cells */
-  margin: 0; /* align to start of wrapper */
-  border: 2px solid #000; /* NYT-style outer border */
+  background: transparent;
+  /* no backdrop behind cells */
+  margin: 0;
+  /* align to start of wrapper */
+  border: 2px solid #000;
+  /* NYT-style outer border */
   /* columns will be set inline via style gridTemplateColumns */
 }
 
@@ -106,7 +115,8 @@
   font-size: 22px;
   text-transform: uppercase;
   outline: none;
-  background: transparent; /* allow parent highlight to show */
+  background: transparent;
+  /* allow parent highlight to show */
   z-index: 2;
 }
 
@@ -126,15 +136,18 @@
 
 /* Slight red background for incorrect cells at the cell level */
 .incorrectCell {
-  background: rgba(220, 38, 38, 0.12); /* red tint */
+  background: rgba(220, 38, 38, 0.12);
+  /* red tint */
 }
 
 .rowHighlight {
-  background: var(--gray-alpha-100); /* light gray */
+  background: var(--gray-alpha-100);
+  /* light gray */
 }
 
 .colHighlight {
-  background: var(--gray-alpha-100); /* light gray */
+  background: var(--gray-alpha-100);
+  /* light gray */
 }
 
 .cellNum {
@@ -150,8 +163,10 @@
 }
 
 .clues {
-  max-height: calc(100vh - 120px); /* constrain to viewport minus header/padding */
-  overflow-y: auto; /* scroll if content exceeds space */
+  max-height: calc(100vh - 120px);
+  /* constrain to viewport minus header/padding */
+  overflow-y: auto;
+  /* scroll if content exceeds space */
   padding: 0;
   border: 1px solid var(--gray-alpha-200);
   border-radius: 6px;
@@ -165,11 +180,13 @@
 }
 
 .teamsPanel {
-  padding: 8px 12px;
+  padding: 12px;
   border: 1px solid var(--gray-alpha-200);
   border-radius: 6px;
   background: var(--background);
-  align-self: start; /* fit height to content; don’t stretch */
+  align-self: start;
+  overflow: hidden;
+  /* fit height to content; don't stretch */
 }
 
 .debugPanel {
@@ -198,8 +215,10 @@
 
 .clueSectionTitle {
   position: sticky;
-  top: -12px; /* Offset to account for parent padding */
-  margin: -12px -12px 8px -12px; /* Negative margins to extend into padding */
+  top: -12px;
+  /* Offset to account for parent padding */
+  margin: -12px -12px 8px -12px;
+  /* Negative margins to extend into padding */
   padding: 12px 12px 6px 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -228,7 +247,6 @@
 
 .clueHidden {
   color: #666;
-  font-style: italic;
 }
 
 .clueSolved {
@@ -258,22 +276,28 @@
 
 .teamsRow {
   display: flex;
-  flex-direction: column; /* stack teams vertically */
+  flex-direction: column;
+  /* stack teams vertically */
   gap: 12px;
-  align-items: stretch; /* let children take full width */
+  align-items: stretch;
+  /* let children take full width */
 }
 
 .teamItem {
-  display: flex; /* full-width row item */
+  display: flex;
+  /* full-width row item */
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
   border: 1px solid var(--gray-alpha-200);
-  border-radius: 6px; /* match other containers */
+  border-radius: 6px;
+  /* match other containers */
   cursor: pointer;
   user-select: none;
-  width: 100%; /* take full container width */
-  box-sizing: border-box; /* include padding in width */
+  width: 100%;
+  /* take full container width */
+  box-sizing: border-box;
+  /* include padding in width */
 }
 
 .teamSelected {
@@ -290,12 +314,19 @@
 }
 
 .teamItemEditing .addTeamInput {
-  flex: 1 1 auto;
-  min-width: 0; /* allow shrinking to container width */
+  flex: 1;
+  min-width: 0;
+  /* allow shrinking to container width */
 }
 
 .teamItemEditing input[type="color"] {
   flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  padding: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
 }
 
 .teamItemEditing .addTeamBtn,
@@ -307,7 +338,6 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 1px solid #00000030;
 }
 
 .teamName {
@@ -324,7 +354,6 @@
 }
 
 .addTeamForm {
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -335,6 +364,7 @@
   border: 1px solid var(--gray-alpha-200);
   border-radius: 6px;
   padding: 0 8px;
+  width: 100%;
 }
 
 .addTeamBtn {
