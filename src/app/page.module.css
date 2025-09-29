@@ -10,7 +10,8 @@
   grid-template-rows: auto 1fr auto;
   align-items: start;
   justify-items: stretch;
-  min-height: 100svh;
+  height: 100svh;
+  overflow: hidden; /* contain scrolling to inner panels */
   padding: 32px;
   gap: 12px;
   font-family: var(--font-source-sans);
@@ -32,13 +33,24 @@
   flex-direction: column;
   gap: 12px;
   grid-row-start: 2;
+  min-height: 0; /* allow inner panels to scroll */
+  overflow: hidden; /* prevent page-level scroll; children manage overflow */
+}
+
+/* Let the Crossword section fill remaining height so its inner panels can scroll */
+.main > :last-child {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .headerRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 12px;
 }
+
+.headerRow h1 { margin: 0; }
 
 .headerBtn {
   appearance: none;

@@ -7,6 +7,8 @@ import { parsePuz } from "@/lib/puz";
 
 type Props = {
   className?: string;
+  onCanStartChange?: (canStart: boolean) => void;
+  onPuzzleChange?: (hasPuzzle: boolean) => void;
 };
 
 type Team = {
@@ -179,7 +181,8 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
     setRevealedAcross(new Array(parsed.across.length).fill(false));
     setRevealedDown(new Array(parsed.down.length).fill(false));
     inputRefs.current = [];
-  }, []);
+    props.onPuzzleChange?.(true);
+  }, [props]);
 
   // Resize cells to fill most of the viewport while respecting clues column
   const computeCellSize = useCallback(() => {
@@ -216,6 +219,11 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
     return () => clearTimeout(t);
   }, [teams.length, showTeamInputs, computeCellSize]);
 
+  // Notify parent whether Start is allowed (>= 2 teams)
+  useEffect(() => {
+    props.onCanStartChange?.(teams.length >= 2);
+  }, [teams.length]);
+
   const checkPuzzle = useCallback(() => {
     if (!puz) return;
     const w = puz.width;
@@ -241,9 +249,19 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
     });
   }, [puz, cells]);
 
+  const start = useCallback(() => {
+    if (teams.length >= 2) {
+      setShowTeamInputs(false);
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn("Cannot start: need at least 2 teams");
+    }
+  }, [teams.length]);
+
   useImperativeHandle(ref, () => ({
     checkPuzzle,
-  }), [checkPuzzle]);
+    start,
+  }), [checkPuzzle, start]);
 
   const handleFileChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>(
     (e) => {
@@ -529,8 +547,14 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
     [puz, activeIndex, mode],
   );
 
+  const isEntrySolved = useCallback(
+    (cellsArr: { index: number }[]) =>
+      cellsArr.length > 0 && cellsArr.every((c) => status[c.index] === "correct"),
+    [status],
+  );
+
   return (
-    <div className={props.className}>
+    <div className={`${styles.root} ${props.className || ""}`.trim()}>
       {!puz ? (
         <div className={styles.uploader}>
           <div
@@ -627,6 +651,7 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
                   {puz.across.map((a, i) => {
                     const shown = revealedAcross[i];
                     const length = a.cells.length;
+                    const solved = isEntrySolved(a.cells);
                     return (
                       <li
                         key={`A${a.number}`}
@@ -648,7 +673,7 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
                         }}
                       >
                         <strong>{a.number}.</strong> {shown ? (
-                          <>{" "}{a.clue}</>
+                          <span className={solved ? styles.clueSolved : undefined}>{" "}{a.clue}</span>
                         ) : (
                           <span className={styles.clueHidden}>{length} {length === 1 ? "letter" : "letters"}</span>
                         )}
@@ -663,6 +688,7 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
                   {puz.down.map((d, i) => {
                     const shown = revealedDown[i];
                     const length = d.cells.length;
+                    const solved = isEntrySolved(d.cells);
                     return (
                       <li
                         key={`D${d.number}`}
@@ -684,7 +710,7 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
                         }}
                       >
                         <strong>{d.number}.</strong> {shown ? (
-                          <>{" "}{d.clue}</>
+                          <span className={solved ? styles.clueSolved : undefined}>{" "}{d.clue}</span>
                         ) : (
                           <span className={styles.clueHidden}>{length} {length === 1 ? "letter" : "letters"}</span>
                         )}
@@ -704,7 +730,7 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
                   return (
                     <div
                       key={t.id}
-                      className={`${styles.teamItem} ${selected ? styles.teamSelected : ""}`}
+                      className={`${styles.teamItem} ${selected ? styles.teamSelected : ""} ${editingTeamId === t.id ? styles.teamItemEditing : ""}`}
                       onClick={() => {
                         if (selected) {
                           setEditingTeamId(t.id);
@@ -760,7 +786,6 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
                           >
                             Save
                           </button>
-                          <span className={styles.teamScore}>{score}</span>
                         </>
                       ) : (
                         <>
@@ -798,15 +823,7 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
                       value={newTeamName}
                       onChange={(e) => setNewTeamName(e.target.value)}
                     />
-                    <button type="submit" className={styles.addTeamBtn}>Add Team</button>
-                    <button
-                      type="button"
-                      className={styles.addTeamBtn}
-                      disabled={teams.length < 2}
-                      onClick={() => setShowTeamInputs(false)}
-                    >
-                      Start
-                    </button>
+                    <button type="submit" className={styles.addTeamBtn}>Add</button>
                   </form>
                 ) : null}
               </div>

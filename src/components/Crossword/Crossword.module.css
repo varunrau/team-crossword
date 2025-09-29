@@ -2,9 +2,12 @@
   display: grid;
   grid-template-columns: auto 360px 300px;
   gap: 24px;
-  align-items: start;
+  align-items: start; /* align items to start */
   width: 100%;
   max-width: 100%;
+  flex: 1;
+  min-height: 0; /* enable child overflow scrolling */
+  overflow: hidden; /* contain overflow to grid items */
 }
 
 .uploader {
@@ -29,6 +32,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  align-items: flex-start; /* prevent child stretch so grid border fits board */
+}
+
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0; /* allow inner grid to define scrollable areas */
 }
 
 .meta {
@@ -63,7 +74,7 @@
   --cell-size: 40px;
   display: inline-grid;
   background: transparent; /* no backdrop behind cells */
-  margin: 0 auto; /* center within wrapper */
+  margin: 0; /* align to start of wrapper */
   border: 2px solid #000; /* NYT-style outer border */
   /* columns will be set inline via style gridTemplateColumns */
 }
@@ -139,12 +150,12 @@
 }
 
 .clues {
-  max-height: 70vh;
-  overflow: auto;
-  padding: 8px 12px;
+  max-height: calc(100vh - 120px); /* constrain to viewport minus header/padding */
+  overflow-y: auto; /* scroll if content exceeds space */
+  padding: 0;
   border: 1px solid var(--gray-alpha-200);
   border-radius: 6px;
-  background: var(--background);
+  background: #fff;
 }
 
 .sidebar {
@@ -158,6 +169,7 @@
   border: 1px solid var(--gray-alpha-200);
   border-radius: 6px;
   background: var(--background);
+  align-self: start; /* fit height to content; don’t stretch */
 }
 
 .debugPanel {
@@ -175,20 +187,28 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  padding: 12px;
+  position: relative;
+  background: #fff;
 }
 
 .clueColumn {
+  position: relative;
 }
 
 .clueSectionTitle {
-  margin: 8px 0;
+  position: sticky;
+  top: -12px; /* Offset to account for parent padding */
+  margin: -12px -12px 8px -12px; /* Negative margins to extend into padding */
+  padding: 12px 12px 6px 12px;
   font-weight: 700;
   text-transform: uppercase;
   font-size: 12px;
   letter-spacing: 0.08em;
   color: #666;
   border-bottom: 1px solid var(--gray-alpha-200);
-  padding-bottom: 6px;
+  background: #fff;
+  z-index: 10;
 }
 
 .clueList {
@@ -209,6 +229,11 @@
 .clueHidden {
   color: #666;
   font-style: italic;
+}
+
+.clueSolved {
+  text-decoration: line-through;
+  opacity: 0.75;
 }
 
 .hidden {
@@ -247,10 +272,34 @@
   border-radius: 999px;
   cursor: pointer;
   user-select: none;
+  max-width: 100%;
 }
 
 .teamSelected {
   border-color: var(--foreground);
+}
+
+/* Editing state: make pill fit container and prevent overflow */
+.teamItemEditing {
+  display: flex;
+  width: 100%;
+  flex: 1 1 100%;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.teamItemEditing .addTeamInput {
+  flex: 1 1 auto;
+  min-width: 0; /* allow shrinking to container width */
+}
+
+.teamItemEditing input[type="color"] {
+  flex: 0 0 auto;
+}
+
+.teamItemEditing .addTeamBtn,
+.teamItemEditing .teamScore {
+  flex: 0 0 auto;
 }
 
 .dot {
