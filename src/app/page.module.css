@@ -11,7 +11,8 @@
   align-items: start;
   justify-items: stretch;
   height: 100svh;
-  overflow: hidden; /* contain scrolling to inner panels */
+  overflow: hidden;
+  /* contain scrolling to inner panels */
   padding: 32px;
   gap: 12px;
   font-family: var(--font-source-sans);
@@ -33,12 +34,14 @@
   flex-direction: column;
   gap: 12px;
   grid-row-start: 2;
-  min-height: 0; /* allow inner panels to scroll */
-  overflow: hidden; /* prevent page-level scroll; children manage overflow */
+  min-height: 0;
+  /* allow inner panels to scroll */
+  overflow: hidden;
+  /* prevent page-level scroll; children manage overflow */
 }
 
 /* Let the Crossword section fill remaining height so its inner panels can scroll */
-.main > :last-child {
+.main> :last-child {
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -50,7 +53,11 @@
   gap: 12px;
 }
 
-.headerRow h1 { margin: 0; }
+.headerRow h1 {
+  margin: 0;
+  font-weight: 400;
+  font-size: 48px;
+}
 
 .headerBtn {
   appearance: none;
@@ -63,7 +70,9 @@
   font-size: 14px;
 }
 
-.headerBtn:hover { background: var(--gray-alpha-100); }
+.headerBtn:hover {
+  background: var(--gray-alpha-100);
+}
 
 .main ol {
   font-family: var(--font-geist-mono);
