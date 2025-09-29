@@ -1,14 +1,11 @@
 ### Team Crossword
 
----
-
 Team crossword is a spin on the classic fill-in crossword that is meant to be played with teams.
 
-![image.png](attachment:fc45072a-3702-4d63-b66c-fe0d55b60711:image.png)
+<img width="1912" height="1237" alt="image" src="https://github.com/user-attachments/assets/908fbc31-e986-486a-bac9-4ac306444f61" />
+
 
 ### How it works
-
----
 
 The goal of the game — like standard crosswords — is to guess words based on crossword clues. However, in this game, you’re competing against other players for control over the same board!
 
