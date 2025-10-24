@@ -47,6 +47,8 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
   const [revealedAcross, setRevealedAcross] = useState<boolean[]>([]);
   const [revealedDown, setRevealedDown] = useState<boolean[]>([]);
   const [started, setStarted] = useState<boolean>(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
 
   const setCaretToEnd = (el: HTMLInputElement | null) => {
     if (!el) return;
@@ -253,7 +255,29 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
       }
       return next;
     });
-  }, [puz, cells]);
+
+    // After checking, automatically switch to the next team and show a toast.
+    if (teams.length) {
+      const currentIdx = teams.findIndex((t) => t.id === selectedTeamId);
+      const idx = currentIdx === -1 ? 0 : currentIdx;
+      const nextIdx = idx + 1;
+      const nextTeam = nextIdx < teams.length ? teams[nextIdx] : teams[0];
+      if (nextTeam) {
+        setSelectedTeamId(nextTeam.id);
+        // Clear any existing toast timer
+        if (toastTimerRef.current) {
+          window.clearTimeout(toastTimerRef.current);
+          toastTimerRef.current = null;
+        }
+        setToast(`Selected next team: ${nextTeam.name}`);
+        // Auto-hide the toast after 2 seconds
+        toastTimerRef.current = window.setTimeout(() => {
+          setToast(null);
+          toastTimerRef.current = null;
+        }, 2000);
+      }
+    }
+  }, [puz, cells, teams, selectedTeamId]);
 
   const start = useCallback(() => {
     if (teams.length >= 2) {
@@ -643,6 +667,11 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
 
   return (
     <div className={`${styles.root} ${props.className || ""}`.trim()}>
+      {toast ? (
+        <div className={styles.toastContainer} role="status" aria-live="polite">
+          <div className={styles.toast}>{toast}</div>
+        </div>
+      ) : null}
       {!puz ? (
         <div className={styles.uploader}>
           <div
