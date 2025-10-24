@@ -407,7 +407,9 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
     const r = Math.floor(idx / w);
     const c = idx % w;
 
-    // If Command is held, Arrow keys (and Enter/Delete handled globally) should not move the cursor
+    // If Command is held, let global shortcuts handle these keys.
+    // Prevent default to avoid caret movement, but do not stop propagation
+    // so the window-level handler can process team selection and actions.
     if (e.metaKey) {
       if (
         e.key === "ArrowUp" ||
@@ -419,7 +421,6 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
         e.key === "Delete"
       ) {
         e.preventDefault();
-        e.stopPropagation();
         return;
       }
     }
