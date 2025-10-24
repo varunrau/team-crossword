@@ -9,6 +9,7 @@ type Props = {
   className?: string;
   onCanStartChange?: (canStart: boolean) => void;
   onPuzzleChange?: (hasPuzzle: boolean) => void;
+  onStartedChange?: (started: boolean) => void;
 };
 
 type Team = {
@@ -45,6 +46,7 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
   const gridAreaRef = useRef<HTMLDivElement | null>(null);
   const [revealedAcross, setRevealedAcross] = useState<boolean[]>([]);
   const [revealedDown, setRevealedDown] = useState<boolean[]>([]);
+  const [started, setStarted] = useState<boolean>(false);
 
   const setCaretToEnd = (el: HTMLInputElement | null) => {
     if (!el) return;
@@ -183,6 +185,9 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
     setRevealedDown(new Array(parsed.down.length).fill(false));
     inputRefs.current = [];
     props.onPuzzleChange?.(true);
+    // Reset started state when loading a new puzzle
+    setStarted(false);
+    props.onStartedChange?.(false);
   }, [props]);
 
   // Resize cells to fill most of the viewport while respecting clues column
@@ -253,11 +258,75 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
   const start = useCallback(() => {
     if (teams.length >= 2) {
       setShowTeamInputs(false);
+      setStarted(true);
+      props.onStartedChange?.(true);
     } else {
       // eslint-disable-next-line no-console
       console.warn("Cannot start: need at least 2 teams");
     }
-  }, [teams.length]);
+  }, [teams.length, props]);
+
+  const clearIncorrectGuesses = useCallback(() => {
+    if (!puz) return;
+    setCells((prev) => prev.map((v, i) => (status[i] === "incorrect" ? "" : v)));
+    setStatus((prev) => prev.map((s) => (s === "incorrect" ? "unchecked" : s)));
+    setOwners((prev) => prev.map((o, i) => (status[i] === "incorrect" ? null : o)));
+  }, [puz, status]);
+
+  const selectNextTeam = useCallback(
+    (wrap: boolean) => {
+      if (!teams.length) return;
+      const currentIdx = teams.findIndex((t) => t.id === selectedTeamId);
+      const idx = currentIdx === -1 ? 0 : currentIdx;
+      const nextIdx = idx + 1;
+      if (nextIdx < teams.length) {
+        setSelectedTeamId(teams[nextIdx].id);
+      } else if (wrap) {
+        setSelectedTeamId(teams[0].id);
+      }
+    },
+    [teams, selectedTeamId],
+  );
+
+  // Global keyboard shortcuts (Command+...)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!e.metaKey) return;
+      // Ensure we only run when a puzzle is loaded
+      if (!puz) return;
+      switch (e.key) {
+        case "Enter":
+          e.preventDefault();
+          e.stopPropagation();
+          checkPuzzle();
+          break;
+        case "Backspace":
+        case "Delete":
+          e.preventDefault();
+          e.stopPropagation();
+          clearIncorrectGuesses();
+          break;
+        case "ArrowDown":
+        case "ArrowRight":
+          e.preventDefault();
+          e.stopPropagation();
+          // As specified, Down/Right go to next team and wrap around
+          selectNextTeam(true);
+          break;
+        case "ArrowUp":
+        case "ArrowLeft":
+          e.preventDefault();
+          e.stopPropagation();
+          // As specified, Up/Left go to next team (no wrap-around)
+          selectNextTeam(false);
+          break;
+        default:
+          break;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [puz, checkPuzzle, clearIncorrectGuesses, selectNextTeam]);
 
   useImperativeHandle(ref, () => ({
     checkPuzzle,
@@ -337,6 +406,23 @@ const Crossword = forwardRef<CrosswordHandle, Props>(function Crossword(props: P
     const h = puz.height;
     const r = Math.floor(idx / w);
     const c = idx % w;
+
+    // If Command is held, Arrow keys (and Enter/Delete handled globally) should not move the cursor
+    if (e.metaKey) {
+      if (
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown" ||
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight" ||
+        e.key === "Enter" ||
+        e.key === "Backspace" ||
+        e.key === "Delete"
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+    }
 
     // Prevent editing correct (locked) cells
     if (status[idx] === "correct") {

@@ -2,12 +2,15 @@
 
 import { useRef, useState } from "react";
 import styles from "./page.module.css";
-import Crossword, { type CrosswordHandle } from "@/components/Crossword/Crossword";
+import Crossword, {
+  type CrosswordHandle,
+} from "@/components/Crossword/Crossword";
 
 export default function Home() {
   const crosswordRef = useRef<CrosswordHandle>(null);
   const [canStart, setCanStart] = useState(false);
   const [hasPuzzle, setHasPuzzle] = useState(false);
+  const [started, setStarted] = useState(false);
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -22,14 +25,16 @@ export default function Home() {
               >
                 Check Puzzle
               </button>
-              <button
-                className={styles.startBtn}
-                type="button"
-                disabled={!canStart}
-                onClick={() => crosswordRef.current?.start()}
-              >
-                Start
-              </button>
+              {!started && (
+                <button
+                  className={styles.startBtn}
+                  type="button"
+                  disabled={!canStart}
+                  onClick={() => crosswordRef.current?.start()}
+                >
+                  Start
+                </button>
+              )}
             </>
           )}
         </div>
@@ -37,6 +42,7 @@ export default function Home() {
           ref={crosswordRef}
           onCanStartChange={setCanStart}
           onPuzzleChange={setHasPuzzle}
+          onStartedChange={setStarted}
         />
       </main>
     </div>
