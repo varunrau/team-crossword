@@ -18,12 +18,6 @@ export default defineConfig({
       name: "chromium-app",
       use: { ...devices["Desktop Chrome"] },
       testMatch: /e2e\/(?!health).*\.spec\.ts$/,
-      webServer: {
-        command: "npm run start -- -p 3000",
-        port: 3000,
-        reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
-      },
     },
   ],
 });
